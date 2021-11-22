@@ -5,4 +5,5 @@ authors = ["Titrate <titrate@protonmain.com"]
 
 [dependencies]
 toml = "0.5.8"
-serde_derive = "1.0.130"
+serde = "1"
+serde_derive = "1"
