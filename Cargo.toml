@@ -1,0 +1,8 @@
+[package]
+name = "gen_cheat_sheet"
+version = "0.0.1"
+authors = ["Titrate <titrate@protonmain.com"]
+
+[dependencies]
+toml = "0.5.8"
+serde_derive = "1.0.130"
