@@ -7,3 +7,5 @@ authors = ["Titrate <titrate@protonmain.com"]
 toml = "0.5.8"
 serde = "1"
 serde_derive = "1"
+html_parser = "0.6.2"
+new_string_template = "1.1.0"
