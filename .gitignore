@@ -1,6 +1,14 @@
+# Do not include personal configs
 *.toml
-!data/*
+
+# Keep the main cargo toml
 !Cargo.toml
+
+# Keep test file for testing
 !config/test.toml
+
+# Exclude built files
 target/
+
+# Do not keep the output file
 keybinds.html
