@@ -10,15 +10,14 @@ use std::collections::HashMap;
 use new_string_template::template::Template;
 use serde_derive::Deserialize;
 
-#[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct Config {
     modkey: Option<String>,
+    mousekey: Option<String>,
     keybind: Option<Vec<Keybind>>,
 }
 
-#[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct Keybind {
     command: String,
     value: Option<String>,
@@ -26,60 +25,146 @@ struct Keybind {
     key: String,
 }
 
-#[allow(unused)]
 fn main() -> io::Result<()> {
     let mut output = String::new();
     let entries = get_config_files("config")?;
-    let cols = 3;
-    let mut col = 0;
     initalize_output(&mut output);
+    let cols = 2;
+    let mut current_col = 0;
+    let mut row_open = true;
     for entry in entries.iter() {
-        let file_name = entry.file_name();
+        if current_col == 0 {
+            add_row(&mut output);
+            row_open = true;
+        }
+        add_col(&mut output);
+        current_col += 1;
+        let file_name = entry.to_str().unwrap();
         let content = read_file(entry)?;
         let config = parse_config(&content);
+        add_table(&mut output, file_name, &config);
+        close_div(&mut output); // col
+        if current_col % cols == 0 {
+            close_div(&mut output); // row
+            row_open = false;
+            current_col = 0;
+        }
+    }
+    if row_open {
+        close_div(&mut output) // close row
     }
     finalize_output(&mut output);
+    fs::write("keybinds.html", output)?;
     Ok(())
 }
 
-#[allow(dead_code, unused)]
 fn add_row(output: &mut String) {
     output.push_str("\n<div class=\"row justify-content-center\">")
 }
 
-#[allow(dead_code, unused)]
 fn add_col(output: &mut String) {
     output.push_str("\n<div class=\"col\">")
 }
 
-#[allow(dead_code)]
 fn close_div(output: &mut String) {
     output.push_str("\n</div>")
 }
 
-#[allow(dead_code, unused)]
-fn add_table(output: &mut String, file_path: String, config: &Config)-> io::Result<()> {
-    let start = file_path.rfind("/").unwrap(); // The start of the file name
+fn add_table(output: &mut String, file_path: &str, config: &Config) {
+    let start = file_path.rfind("/").unwrap() + 1; // The start of the file name
     let file_name = &file_path[start..];
-    let h2_str = "\n<h2>{heading}</h2>"; 
+    let h2_str = "\n<h2>File \"{heading}\"</h2>"; 
+    let h2_templ = Template::new(h2_str);
     let data = {
         let mut map = HashMap::new();
         map.insert("heading", file_name);
-        if file_name == "base" {
-            map.insert("modkey", config.modkey.as_ref().unwrap());
-        }
         map
     };
 
-    let h2_templ = Template::new(h2_str);
     output.push_str(&h2_templ.render(&data).expect("Expected Result to be OK"));
-    if file_name == "base" {
-        // add base table
-    } else {
-        
+    if file_name == "base.toml" {
+        output.push_str("\n<h3>Basic Config</h3>");
+        initalize_table(output);
+        add_table_head_row(output, &["Setting", "Value"]);
+        add_table_data_row(output, &["modkey", config.modkey.as_ref().unwrap()]);
+        add_table_data_row(output, &["mousekey", config.mousekey.as_ref().unwrap()]);
+        finalize_table(output)
     }
+    
+    output.push_str("\n<h3>Keybinds</h3>");
+    initalize_table(output);
+    add_table_head_row(output, &["Modifier", "Key", "Command[: Value]"]);
+    let empty_vec: Vec<Keybind> = Vec::new(); // for if no keybinds present
+    for keybind in config.keybind.as_ref().unwrap_or(&empty_vec) {
+        let mut command = String::new();
+        command.push_str(&keybind.command);
+        if keybind.command == "Execute" {
+            command.push_str(": ");
+            command.push_str("<b>&lt;");
+            command.push_str(&keybind.value.as_ref().unwrap());
+            command.push_str("&gt;</b>");
+        }
+        add_table_data_row(output, &[
+            &keybind.modifier.join(", ").to_string(),
+            &keybind.key,
+            &command.to_string(),
+        ]);
+    }
+    
+    finalize_table(output)
+}
 
-    Ok(())
+fn initalize_table(output: &mut String) {
+    //output.push_str("\n<table class=\"table table-dark table-borderless table-sm\">");
+    output.push_str("\n<table class=\"table table-dark table-striped\">");
+}
+
+fn add_table_head_row(output: &mut String, col_data: &[&str]) {
+    open_tag(output, "thead");
+    open_tag(output, "tr");
+    add_table_row_headers(output, col_data);
+    close_tag(output, "tr");
+    close_tag(output, "thead");
+}
+
+fn add_table_data_row(output: &mut String, col_data: &[&str]) {
+    open_tag(output, "tbody");
+    open_tag(output, "tr");
+    add_table_row_data(output, col_data);
+    close_tag(output, "tr");
+    close_tag(output, "tbody");
+}
+
+fn add_table_row_headers(output: &mut String, col_data: &[&str]) {
+    for col in col_data {
+        output.push_str("\n<th scope=\"col\">");
+        output.push_str(col);
+        output.push_str("</th>")
+    }
+}
+
+fn add_table_row_data(output: &mut String, col_data: &[&str]) {
+    for col in col_data {
+        output.push_str("\n<td>");
+        output.push_str(col);
+        output.push_str("</td>")
+    }
+}
+
+fn open_tag(output: &mut String, tag: &str) {
+    output.push_str("\n<");
+    output.push_str(tag);
+    output.push_str(">");
+}
+
+fn  close_tag(output: &mut String, tag: &str) {
+    output.push_str("\n</");
+    output.push_str(tag);
+    output.push_str(">");
+}
+
+fn finalize_table(output: &mut String) {
+    output.push_str("\n</table>")
 }
 
 fn initalize_output(output: &mut String) {
