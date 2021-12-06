@@ -1,0 +1,12 @@
+modkey = "Mod4"
+
+[[keybind]]
+command = "Execute"
+value = "rofi -show run"
+modifier = ["modkey"]
+key = "p"
+
+[[keybind]]
+command = "CloseWindow"
+modifier = ["modkey", "Shift"]
+key = "q"

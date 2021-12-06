@@ -1,5 +1,6 @@
 *.toml
 !data/*
 !Cargo.toml
+!config/test.toml
 target/
 keybinds.html
