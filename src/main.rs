@@ -33,13 +33,17 @@ fn main() -> io::Result<()> {
     let mut current_col = 0;
     let mut row_open = true;
     for entry in entries.iter() {
+        let file_name = entry.to_str().unwrap();
+        let to_continue = file_name.rfind("test.toml").unwrap_or(0);
+        if to_continue > 0 {
+            continue
+        }
         if current_col == 0 {
             add_row(&mut output);
             row_open = true;
         }
         add_col(&mut output);
         current_col += 1;
-        let file_name = entry.to_str().unwrap();
         let content = read_file(entry)?;
         let config = parse_config(&content);
         add_table(&mut output, file_name, &config);
@@ -176,8 +180,12 @@ fn initalize_output(output: &mut String) {
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
             </head>
             <body>
-                <h1>LeftWM Shortcuts</h1>
-                <div class="container">"#)
+                <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-4">
+                        <h1>LeftWM Shortcuts</h1>
+                    </div>
+                </div>"#)
 }
 
 fn finalize_output(output: &mut String) {
